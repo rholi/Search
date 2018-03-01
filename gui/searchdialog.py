@@ -17,6 +17,8 @@ from threading import *
 import json
 
 SEARCHSETUP = os.path.expanduser('~') + os.sep + '.searchsetup'
+BUTTON_MODE_FOR_SEARCHING = 0
+BUTTON_MODE_FOR_STOPPING  = 1
 
 class SearchDialog(QDialog):
 	directoryDict = {}
@@ -79,12 +81,10 @@ class SearchDialog(QDialog):
 		self.cancelButton.clicked.connect(self.closeDialog)
 		
 		self.searchButton = QPushButton("&Search")
-		self.searchButton.setDefault(True)
 		self.searchButton.clicked.connect(self.searchButtonClicked)
 		
 		self.stopButton = QPushButton("Sto&p")
 		self.stopButton.clicked.connect(self.stopButtonClicked)
-		self.stopButton.setVisible(False)
 		
 		self.showInFmanButton = QPushButton("show results in &fman pane")
 		self.showInFmanButton.clicked.connect(self.showInFman)
@@ -122,6 +122,8 @@ class SearchDialog(QDialog):
 		buttonBoxLayout.addWidget(self.showInFmanButton)
 		
 		self.layout.addLayout(buttonBoxLayout)
+		
+		self.buttonMode(BUTTON_MODE_FOR_SEARCHING)
 
 		# set from setup
 		try:
@@ -157,6 +159,8 @@ class SearchDialog(QDialog):
 	def closeDialog(self):		
 
 		try:
+			self.fileNameQueueTimer.stop()
+
 			if hasattr(self,'searchThread'):
 				self.searchStop()
 
@@ -181,19 +185,45 @@ class SearchDialog(QDialog):
 	def keyPressEvent(self, e):
 		if e.key() == Qt.Key_Escape:
 			self.closeDialog()
-
+			
+	def buttonMode(self,button_mode):
+		try:
+			if button_mode == BUTTON_MODE_FOR_SEARCHING:
+				show_status_message('button_mode=SEARCHING')
+				
+				self.stopButton.setEnabled(False)
+				self.stopButton.setVisible(False)
+				
+				self.searchButton.setVisible(True)
+				self.searchButton.setEnabled(True)
+				self.searchButton.setDefault(True)
+			
+			elif button_mode == BUTTON_MODE_FOR_STOPPING:			
+				show_status_message('button_mode=STOPPING')
+				
+				self.searchButton.setEnabled(False)
+				self.searchButton.setVisible(False)
+				
+				self.stopButton.setVisible(True)
+				self.stopButton.setEnabled(True)
+				self.stopButton.setDefault(True)
+				
+			QtWidgets.QApplication.instance().processEvents()
+			
+		except Exception as e:
+			show_status_message('error: %s' %(e))
+			
+		
 	def searchButtonClicked(self):
-		self.searchButton.setVisible(False)
-		self.stopButton.setVisible(True)
-		self.stopButton.setDefault(True)
+		show_status_message('searching...')
+		self.buttonMode(BUTTON_MODE_FOR_STOPPING)
 		self.searchInDir()
+		
 	
 	def stopButtonClicked(self):
-		self.stopButton.setVisible(False)
-		self.searchButton.setVisible(True)
-		self.searchButton.setDefault(True)
+		show_status_message('stopping...')
+		self.buttonMode(BUTTON_MODE_FOR_SEARCHING)
 		self.searchStop()
-	
 		
 	def searchInDir(self):
 
@@ -235,7 +265,6 @@ class SearchDialog(QDialog):
 			self.searcher.additemSignal.connect(self.searchResultAddItem)
 			self.searcher.messageSignal.connect(self.showMessage)
 			self.searcher.finished.connect(self.finished)
-			self.searchThread.finished.connect(self.finished)
 
 			self.searchThread.start()
 		except Exception as e:
@@ -243,7 +272,6 @@ class SearchDialog(QDialog):
 	
 
 	def searchStop(self):
-		
 		self.searchStopEvent.set()
 		
 		if hasattr(self,'searchThread'):
@@ -280,7 +308,6 @@ class SearchDialog(QDialog):
 
 	def progress(self,value):
 		self.progressBar.setProperty('value', value)
-		
 		self.progressBar.setFormat('update gui %i/%i' %(self.counterInserted,self.counter))
 
 	def addItem(self,filename):
@@ -298,6 +325,8 @@ class SearchDialog(QDialog):
 
 		if(self.counter > 0):
 			self.progress(100 / self.counter * self.counterInserted)
+
+		QtWidgets.QApplication.instance().processEvents()
 			
 		
 		
@@ -323,6 +352,7 @@ class SearchDialog(QDialog):
 				QtWidgets.QApplication.instance().processEvents()
 
 			self.addItems(stringList)
+			
 	
 		except Exception as e:
 			show_status_message('error: %s' %(e))
@@ -340,8 +370,9 @@ class SearchDialog(QDialog):
 			show_status_message('error: %s' %(e))
 
 	def finished(self):
+		self.buttonMode(BUTTON_MODE_FOR_SEARCHING)
 		self.showMessage('search finished - double click on entry to show file in fman pane')
-
+		
 	def load_setup(self,setupfile):
 		list = {}
 
