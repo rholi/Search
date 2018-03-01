@@ -79,8 +79,12 @@ class SearchDialog(QDialog):
 		self.cancelButton.clicked.connect(self.closeDialog)
 		
 		self.searchButton = QPushButton("&Search")
-		#self.searchButton.setDefault(True)
+		self.searchButton.setDefault(True)
 		self.searchButton.clicked.connect(self.searchButtonClicked)
+		
+		self.stopButton = QPushButton("Sto&p")
+		self.stopButton.clicked.connect(self.stopButtonClicked)
+		self.stopButton.setVisible(False)
 		
 		self.showInFmanButton = QPushButton("show results in &fman pane")
 		self.showInFmanButton.clicked.connect(self.showInFman)
@@ -114,6 +118,7 @@ class SearchDialog(QDialog):
 		buttonBoxLayout = QHBoxLayout(self)
 		buttonBoxLayout.addWidget(self.cancelButton)
 		buttonBoxLayout.addWidget(self.searchButton)
+		buttonBoxLayout.addWidget(self.stopButton)
 		buttonBoxLayout.addWidget(self.showInFmanButton)
 		
 		self.layout.addLayout(buttonBoxLayout)
@@ -178,12 +183,17 @@ class SearchDialog(QDialog):
 			self.closeDialog()
 
 	def searchButtonClicked(self):
-		if self.searchButton.text() == '&Stop':
-			self.searchStop()
-			self.searchButton.setText('&Search')
-		else:
-			self.searchButton.setText("&Stop")
-			self.searchInDir()
+		self.searchButton.setVisible(False)
+		self.stopButton.setVisible(True)
+		self.stopButton.setDefault(True)
+		self.searchInDir()
+	
+	def stopButtonClicked(self):
+		self.stopButton.setVisible(False)
+		self.searchButton.setVisible(True)
+		self.searchButton.setDefault(True)
+		self.searchStop()
+	
 		
 	def searchInDir(self):
 
@@ -238,12 +248,7 @@ class SearchDialog(QDialog):
 		
 		if hasattr(self,'searchThread'):
 			self.searchThread.quit()
-			self.searchThread.wait()
-		
-		self.fileNameQueueTimer.stop()
-
-		
-					
+			self.searchThread.wait()		
 
 	def showInFman(self):
 		
@@ -276,7 +281,7 @@ class SearchDialog(QDialog):
 	def progress(self,value):
 		self.progressBar.setProperty('value', value)
 		
-		self.progressBar.setFormat('inserted %i/%i' %(self.counterInserted,self.counter))
+		self.progressBar.setFormat('update gui %i/%i' %(self.counterInserted,self.counter))
 
 	def addItem(self,filename):
 		self.searchResultList.addItem(filename)
@@ -293,6 +298,8 @@ class SearchDialog(QDialog):
 
 		if(self.counter > 0):
 			self.progress(100 / self.counter * self.counterInserted)
+			
+		
 		
 	def setFoundFiles(self,count):
 		self.counterLabel.setText('%i files found' %(count))
@@ -332,9 +339,7 @@ class SearchDialog(QDialog):
 		except Exception as e:
 			show_status_message('error: %s' %(e))
 
-		
 	def finished(self):
-		self.searchButton.setText('&Search')
 		self.showMessage('search finished - double click on entry to show file in fman pane')
 
 	def load_setup(self,setupfile):

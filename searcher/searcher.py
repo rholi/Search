@@ -65,7 +65,7 @@ class Searcher(QtCore.QObject):
 									self.additemSignal.emit(filename)
 							else:
 								# Emit the signal for found filename
-								self.additemSignal.emit(filename)
+								self.additemSignal.emit(filename)	
 							
 
 					if self.stopEvent.isSet():
