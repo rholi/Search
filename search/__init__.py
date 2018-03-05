@@ -38,14 +38,12 @@ class SearchFileSystem(FileSystem):
 	def iterdir(self, path):
 		list = []
 
-		try:
-			if path == '':
-				list = root_node.children_as_string
-			else:
-				list = root_node.get_from_os_path(path).children_as_string
-		except Exception as e:
-			
-			pass
+		if path == '':
+			list = root_node.children_as_string
+		else:
+			node = root_node.get_from_os_path(path)
+			if not node is None:
+				list = node.children_as_string
 			
 		return(list)
 
@@ -58,8 +56,6 @@ class SearchFileSystem(FileSystem):
 		except Exception as e:
 			return(False)
 
-	#def resolve(self,path):
-	#	return(as_url(path,'search://'))
 
 	def size_bytes(self, path):
 		node = root_node.get_from_os_path(path)

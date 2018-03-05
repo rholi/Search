@@ -164,7 +164,6 @@ class SearchDialog(QDialog):
 			if hasattr(self,'searchThread'):
 				self.searchStop()
 
-			#show_status_message('search end')
 
 			self.addItemsFromQueue()
 
@@ -189,7 +188,6 @@ class SearchDialog(QDialog):
 	def buttonMode(self,button_mode):
 		try:
 			if button_mode == BUTTON_MODE_FOR_SEARCHING:
-				show_status_message('button_mode=SEARCHING')
 				
 				self.stopButton.setEnabled(False)
 				self.stopButton.setVisible(False)
@@ -199,7 +197,6 @@ class SearchDialog(QDialog):
 				self.searchButton.setDefault(True)
 			
 			elif button_mode == BUTTON_MODE_FOR_STOPPING:			
-				show_status_message('button_mode=STOPPING')
 				
 				self.searchButton.setEnabled(False)
 				self.searchButton.setVisible(False)
@@ -372,6 +369,8 @@ class SearchDialog(QDialog):
 	def finished(self):
 		self.buttonMode(BUTTON_MODE_FOR_SEARCHING)
 		self.showMessage('search finished - double click on entry to show file in fman pane')
+		clear_status_message()
+		
 		
 	def load_setup(self,setupfile):
 		list = {}
