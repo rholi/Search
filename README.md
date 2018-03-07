@@ -6,6 +6,7 @@ Search for files in fman with Cmd+F7 / Ctrl+F7
 ## Usage
 Use the hotkey Cmd+F7 on Mac or Ctrl+F7 on Windows and Linux 
 or use the Command Palette to run the `Search` command.
+On Macs's, you can use Spotlight to search for find files and text within files.
 
 ## Installation
 Use fman's

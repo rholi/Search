@@ -1,12 +1,12 @@
 
 import fman.fs
+import sys,os,time, datetime,locale,re
 from fman.fs import FileSystem
 from core.quicksearch_matchers import contains_chars
 from fman import DirectoryPaneCommand, show_alert, show_prompt, show_quicksearch, QuicksearchItem, show_status_message, clear_status_message
 from fman.url import splitscheme, as_url, join, basename, as_human_readable, dirname
 from fman.impl.util.qt.thread import run_in_main_thread
 from core.tests import StubFS
-import sys,os,time, datetime,locale,re
 from gui.searchdialog import SearchDialog
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QMessageBox
 from searcher.directory_node import DirectoryNode
@@ -20,6 +20,14 @@ class SearchWithDialog(DirectoryPaneCommand):
 	@run_in_main_thread
 	def __call__(self):
 		scheme, currentDir = splitscheme(self.pane.get_path())
+		
+		global current_dir
+		global current_parent_dir
+		
+		current_dir = currentDir
+		current_parent_dir =os.path.abspath(os.path.join(current_dir, os.pardir))
+		
+		
 		self.searchDialog = SearchDialog(scheme,currentDir,self.pane,root_node)
 		self.searchDialog.show()
 
@@ -34,6 +42,14 @@ class SearchFileSystem(FileSystem):
 
 	def get_default_columns(self, path):
 		return 'core.Name', 'core.Size', 'core.Modified'
+
+	def resolve(self, path):
+		
+		if current_parent_dir == path:
+			return as_url(path)
+		
+		return super().resolve(path)
+			
 
 	def iterdir(self, path):
 		list = []

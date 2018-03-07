@@ -5,7 +5,7 @@ class DirectoryNode:
 	'''
 	DirectoryNode:
 	root = DirectoryNode()
-	root.create_from_os_path('(usr(home/test/test.txt')
+	root.add_from_os_path('/usr/home/test/test.txt')
 	'''
 	def __init__(self,name='root',parent=None):
 		self.filestat = None
