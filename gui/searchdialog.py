@@ -1,20 +1,21 @@
 import os,sys,time, datetime,locale,re
+import platform
+import fman.fs
+import fman.url
+import queue
+import json
+
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5 import QtCore
 from fman import *
-import fman.fs
-import fman.url
-import queue
 from fman.url import as_url
 
 from searcher.directory_node import DirectoryNode
-from searcher.searcher import Searcher
+from searcher.searcher import *
 
 from threading import *
-
-import json
 
 SEARCHSETUP = os.path.expanduser('~') + os.sep + '.searchsetup'
 BUTTON_MODE_FOR_SEARCHING = 0
@@ -68,6 +69,9 @@ class SearchDialog(QDialog):
 		gridLayout = QGridLayout()
 		groupBox.setLayout(gridLayout)
 		
+		self.searchSpotlightCheckBox = QCheckBox('Sp&otlight Search')
+		
+		
 		fileFilterLabel = QLabel('file filter')
 		self.fileFilterText = QLineEdit('*.*')
 		
@@ -94,17 +98,22 @@ class SearchDialog(QDialog):
 		
 		self.counterLabel = QLabel('')
 
-		gridLayout.addWidget(fileFilterLabel,0,0)	
-		gridLayout.addWidget(self.fileFilterText,0,1)
+		# Only for Mac
+		if platform.system() == 'Darwin':
+			gridLayout.addWidget(self.searchSpotlightCheckBox,0,0)
+			gridLayout.addWidget(QLabel('search for files with spotlight'),0,1)	
+
+		gridLayout.addWidget(fileFilterLabel,1,0)	
+		gridLayout.addWidget(self.fileFilterText,1,1)
 		
-		gridLayout.addWidget(searchDirLabel,1,0)	
-		gridLayout.addWidget(self.searchDirText,1,1)
+		gridLayout.addWidget(searchDirLabel,2,0)	
+		gridLayout.addWidget(self.searchDirText,2,1)
 		
-		gridLayout.addWidget(self.searchCheckBox,2,0)
-		gridLayout.addWidget(self.searchText,2,1)
+		gridLayout.addWidget(self.searchCheckBox,3,0)
+		gridLayout.addWidget(self.searchText,3,1)
 		
-		gridLayout.addWidget(self.counterLabel,3,0)
-		gridLayout.addWidget(self.messageLabel,3,1)
+		gridLayout.addWidget(self.counterLabel,4,0)
+		gridLayout.addWidget(self.messageLabel,4,1)
 	
 		self.searchResultList = QListWidget()
 		self.layout.addWidget(self.searchResultList)
@@ -126,6 +135,12 @@ class SearchDialog(QDialog):
 		self.buttonMode(BUTTON_MODE_FOR_SEARCHING)
 
 		# set from setup
+		try:
+			spotlightcheck = self.setup['searchspotlight']
+			self.searchSpotlightCheckBox.setChecked(spotlightcheck)
+		except Exception as e:
+			pass
+			
 		try:
 			filefilter = self.setup['filefilter']
 			self.fileFilterText.setText(filefilter)
@@ -231,9 +246,7 @@ class SearchDialog(QDialog):
 				self.searchThread.wait()
 		
 		
-			fileFilter = self.fileFilterText.text()
-			regexp = self.convert_filefilter_to_regexp(fileFilter)
-			pattern = re.compile(regexp)
+			pattern = self.fileFilterText.text()
 			directory = self.searchDirText.text()
 		
 			searchText = ''
@@ -253,7 +266,11 @@ class SearchDialog(QDialog):
 			
 			self.setFoundFiles(self.counter)
 
-			self.searcher = Searcher(directory,pattern,searchText,self.searchStopEvent)
+			searchmode = SEARCH_MODE_SEQU
+			if platform.system() == 'Darwin' and self.searchSpotlightCheckBox.isChecked():
+				searchmode = SEARCH_MODE_SPOTLIGHT
+
+			self.searcher = Searcher(directory,pattern,searchText,self.searchStopEvent,searchmode)
 			self.searchThread = QtCore.QThread()
 			self.searcher.moveToThread(self.searchThread)
 
@@ -289,23 +306,10 @@ class SearchDialog(QDialog):
 			show_alert('no search results to display in fman!')
 
 		self.close()
-				
-	def convert_filefilter_to_regexp(self,filefilter):
-		regexp = filefilter
-		# * to .*
-		# ? to .
-		# . to [.]
-		regexp = regexp.replace('.','[.]')
-		regexp = regexp.replace('*','.*')
-		regexp = regexp.replace('?','.')
-
-		regexp = '^' + regexp + '$'
-
-		return(regexp)
 
 	def progress(self,value):
 		self.progressBar.setProperty('value', value)
-		self.progressBar.setFormat('update gui %i/%i' %(self.counterInserted,self.counter))
+		self.progressBar.setFormat('update filelist %i/%i' %(self.counterInserted,self.counter))
 
 	def addItem(self,filename):
 		self.searchResultList.addItem(filename)
@@ -388,6 +392,7 @@ class SearchDialog(QDialog):
 		setup['filefilter'] = self.fileFilterText.text()
 		setup['searchtext'] = self.searchText.text()
 		setup['searchtextcheck'] = self.searchCheckBox.checkState()
+		setup['searchspotlight'] = self.searchSpotlightCheckBox.checkState()
 
 		with open(setupfile, 'w') as outfile:
 			json.dump(setup, outfile)

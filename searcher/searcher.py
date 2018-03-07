@@ -1,9 +1,16 @@
 
 import os,sys,time, datetime,locale,re
+import subprocess,sys
+import platform
 
+from time import sleep
 from PyQt5 import QtCore
 from threading import *
 from .filesearcher import FileSearcher
+
+
+SEARCH_MODE_SEQU = 0
+SEARCH_MODE_SPOTLIGHT = 1
 
 class Searcher(QtCore.QObject):
 
@@ -12,16 +19,22 @@ class Searcher(QtCore.QObject):
 	messageSignal = QtCore.pyqtSignal(object)
 	finished = QtCore.pyqtSignal()
 	
-	def __init__(self,directory,pattern,searchText='',stopEvent=Event()):
+	def __init__(self,directory,pattern,searchText='',stopEvent=Event(),searchMode=SEARCH_MODE_SEQU):
 		super(Searcher, self).__init__()
 
 		self.directory = directory
 		self.pattern = pattern
 		self.searchText = searchText
 		self.stopEvent = stopEvent
+		self.searchMode = searchMode
 
 	def startSearch(self):
-		self.searchInDir(self.directory,self.pattern,self.searchText)
+		# On mac start search with Spotlight
+		if self.searchMode == SEARCH_MODE_SPOTLIGHT:
+			self.searchInSpotlight(self.directory,self.pattern,self.searchText)
+		elif self.searchMode == SEARCH_MODE_SEQU:
+			self.searchInDir(self.directory,self.pattern,self.searchText)
+			
 		self.finished.emit()
 		
 	def shortMessage(self,message):
@@ -31,11 +44,13 @@ class Searcher(QtCore.QObject):
 
 		return(short_message)
 	
-	def searchInDir(self,directory,pattern,searchText=''):
-		"searach in directory  pattern"
+	def searchInDir(self,directory,searchpattern,searchText=''):
+		"search in directory  pattern"
 		searchInText = False
 		message = directory
 		filename = ''
+		regexp = convert_filefilter_to_regexp(searchpattern)
+		pattern = re.compile(regexp)
 
 		stack = [directory]
 
@@ -75,12 +90,29 @@ class Searcher(QtCore.QObject):
 				self.messageSignal.emit('error: %s' %(e))
 
 		return
-	
-	def searchInDirRecursive(self,directory,pattern,searchText=''):
+		
+	# Spotlight Search for MAC only
+	def searchInSpotlight(self,directory,pattern,searchText=''):
+		self.messageSignal.emit('search in spotlight for %s %s' %(pattern,searchText) )
+		command = "mdfind -onlyin '%s'" %(directory)
+		if searchText:
+			command += " \"kMDItemFSName=='%s' && kMDItemTextContent=='%s'\"" %(pattern,searchText)
+		else:
+			command += " \"kMDItemFSName=='%s'\"" %(pattern)
+			
+		for filename in run_command(command):
+			self.additemSignal.emit(str(filename))
+			if self.stopEvent.isSet():
+				return
+			
+		
+	def searchInDirRecursive(self,directory,searchpattern,searchText=''):
 		"Sucht Rekursiv ab Verzeichnis nach pattern"
 		searchInText = False
 		message = directory
 		filename = ''
+		regexp = convert_filefilter_to_regexp(searchpattern)
+		pattern = re.compile(regexp)
 
 		if(len(searchText) > 0):
 			searchInText = True
@@ -121,4 +153,25 @@ class Searcher(QtCore.QObject):
 
 		return
 
-	 
+def run_command(command):
+	p = subprocess.Popen(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
+	for line in iter(p.stdout.readline,b''):
+		if line: # Don't print blank lines
+			yield line.decode('utf8').replace('\n','')
+			
+	# waiting for done
+	while p.poll() is None:                                                                                                                                        
+		sleep(.1) 
+		
+def convert_filefilter_to_regexp(filefilter):
+	regexp = filefilter
+	# * to .*
+	# ? to .
+	# . to [.]
+	regexp = regexp.replace('.','[.]')
+	regexp = regexp.replace('*','.*')
+	regexp = regexp.replace('?','.')
+
+	regexp = '^' + regexp + '$'
+
+	return(regexp)
