@@ -25,7 +25,7 @@ class SearchWithDialog(DirectoryPaneCommand):
 		global current_parent_dir
 		
 		current_dir = currentDir
-		current_parent_dir =os.path.abspath(os.path.join(current_dir, os.pardir))
+		current_parent_dir = os.path.normpath(os.path.join(current_dir, os.pardir))
 		
 		
 		self.searchDialog = SearchDialog(scheme,currentDir,self.pane,root_node)
@@ -44,8 +44,8 @@ class SearchFileSystem(FileSystem):
 		return 'core.Name', 'core.Size', 'core.Modified'
 
 	def resolve(self, path):
-		
-		if current_parent_dir == path:
+	
+		if current_parent_dir == os.path.normpath(path):
 			return as_url(path)
 		
 		return super().resolve(path)
