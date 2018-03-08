@@ -73,13 +73,16 @@ class SearchDialog(QDialog):
 		
 		
 		fileFilterLabel = QLabel('file filter')
-		self.fileFilterText = QLineEdit('*.*')
+		#self.fileFilterText = QLineEdit('*.*')
+		self.fileFilterText = QComboBox()
+		self.fileFilterText.setEditable(True)
 		
 		searchDirLabel = QLabel('search in directory')
 		self.searchDirText = QLineEdit(self.directory)
 		
 		self.searchCheckBox = QCheckBox('search &text')
-		self.searchText = QLineEdit()
+		self.searchText = QComboBox()
+		self.searchText.setEditable(True)
 
 		self.cancelButton = QPushButton("&Cancel")
 		self.cancelButton.clicked.connect(self.closeDialog)
@@ -142,14 +145,26 @@ class SearchDialog(QDialog):
 			pass
 			
 		try:
+			filefilterhistory = self.setup['filefilterhistory']
+			self.fileFilterText.addItems(filefilterhistory)
+		except Exception as e:
+			pass
+
+		try:
 			filefilter = self.setup['filefilter']
-			self.fileFilterText.setText(filefilter)
+			self.fileFilterText.setEditText(filefilter)
+		except Exception as e:
+			pass
+
+		try:
+			searchtexthistory = self.setup['searchtexthistory']
+			self.searchText.addItems(searchtexthistory)
 		except Exception as e:
 			pass
 
 		try:
 			searchtext = self.setup['searchtext']
-			self.searchText.setText(searchtext)
+			self.searchText.setEditText(searchtext)
 		except Exception as e:
 			pass
 
@@ -185,7 +200,6 @@ class SearchDialog(QDialog):
 			if self.isFullScreen():
 				self.showNormal()
 
-			self.save_setup(SEARCHSETUP)
 
 			self.close()
 		except Exception as e:
@@ -228,6 +242,7 @@ class SearchDialog(QDialog):
 		
 	def searchButtonClicked(self):
 		show_status_message('searching...')
+		self.save_setup(SEARCHSETUP)
 		self.buttonMode(BUTTON_MODE_FOR_STOPPING)
 		self.searchInDir()
 		
@@ -246,13 +261,13 @@ class SearchDialog(QDialog):
 				self.searchThread.wait()
 		
 		
-			pattern = self.fileFilterText.text()
+			pattern = self.fileFilterText.currentText()
 			directory = self.searchDirText.text()
 		
 			searchText = ''
 
 			if self.searchCheckBox.isChecked():
-				searchText = self.searchText.text()
+				searchText = self.searchText.currentText()
 		
 			self.fileNameQueue.queue.clear()
 			self.searchResultList.clear()
@@ -261,7 +276,7 @@ class SearchDialog(QDialog):
 			self.counter = 0
 			self.counterInserted = 0
 
-			self.progressBar.setProperty("value", 0)
+			self.progress(0)
 			self.progressBar.setVisible(True)
 			
 			self.setFoundFiles(self.counter)
@@ -389,8 +404,42 @@ class SearchDialog(QDialog):
 	def save_setup(self,setupfile):
 		setup = {}
 		
-		setup['filefilter'] = self.fileFilterText.text()
-		setup['searchtext'] = self.searchText.text()
+		filefilter = self.fileFilterText.currentText()
+		
+		# save only the last 10 entries
+		filefilterhistory = []
+		try:
+			filefilterhistory = self.setup['filefilterhistory']
+		except Exception as e:
+			pass
+		
+		if not filefilter in filefilterhistory:
+			filefilterhistory.insert(0,filefilter)
+			
+		if len(filefilterhistory) > 10:
+			filefilterhistory = filefilterhistory[:10]
+		
+		
+		searchtext = self.searchText.currentText()
+		
+		# save only the last 10 entries
+		searchtexthistory = []
+		try:
+			searchtexthistory = self.setup['searchtexthistory']
+		except Exception as e:
+			pass
+		
+		if not searchtext in searchtexthistory:
+			searchtexthistory.insert(0,searchtext)
+			
+		if len(searchtexthistory) > 10:
+			searchtexthistory = searchtexthistory[:10]
+		
+		
+		setup['filefilter'] = filefilter
+		setup['filefilterhistory'] = filefilterhistory
+		setup['searchtext'] = searchtext
+		setup['searchtexthistory'] = searchtexthistory
 		setup['searchtextcheck'] = self.searchCheckBox.checkState()
 		setup['searchspotlight'] = self.searchSpotlightCheckBox.checkState()
 

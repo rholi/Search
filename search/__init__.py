@@ -46,7 +46,7 @@ class SearchFileSystem(FileSystem):
 	def resolve(self, path):
 	
 		if current_parent_dir == os.path.normpath(path):
-			return as_url(path)
+			return as_url(current_dir)
 		
 		return super().resolve(path)
 			
