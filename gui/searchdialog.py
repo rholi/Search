@@ -285,6 +285,7 @@ class SearchDialog(QDialog):
 			self.setTextMode(self.searchCheckBox.isChecked(),True)
 		else:
 			# spotlight mode is off 
+			self.searchSpotlightCheckBox.setChecked(False)
 			self.setSpotlightMode(self.searchSpotlightCheckBox.isChecked(),False)
 			self.setTextMode(self.searchCheckBox.isChecked(),True)
 			
