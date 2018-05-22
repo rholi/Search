@@ -2,6 +2,7 @@
 Search for files in fman with Cmd+F7 / Ctrl+F7
 
 ![Screenshot](search1.png?raw=true "Screenshot")
+![Screenshot](search2.png?raw=true "Screenshot")
 
 ## Usage
 Use the hotkey Cmd+F7 on Mac or Ctrl+F7 on Windows and Linux 

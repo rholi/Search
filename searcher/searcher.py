@@ -8,6 +8,8 @@ from PyQt5 import QtCore
 from threading import *
 from .filesearcher import FileSearcher
 
+from fman import show_alert
+
 
 SEARCH_MODE_SEQU = 0
 SEARCH_MODE_SPOTLIGHT = 1
@@ -19,7 +21,7 @@ class Searcher(QtCore.QObject):
 	messageSignal = QtCore.pyqtSignal(object)
 	finished = QtCore.pyqtSignal()
 	
-	def __init__(self,directory,pattern,searchText='',stopEvent=Event(),searchMode=SEARCH_MODE_SEQU):
+	def __init__(self,directory,pattern,searchText='',stopEvent=Event(),searchMode=SEARCH_MODE_SEQU,searchSubDirLevel=0,includeDirectories=True,encoding='utf-8'):
 		super(Searcher, self).__init__()
 
 		self.directory = directory
@@ -27,6 +29,9 @@ class Searcher(QtCore.QObject):
 		self.searchText = searchText
 		self.stopEvent = stopEvent
 		self.searchMode = searchMode
+		self.searchSubDirLevel = searchSubDirLevel
+		self.includeDirectories = includeDirectories
+		self.encoding = encoding
 
 	def startSearch(self):
 		# On mac start search with Spotlight
@@ -51,7 +56,10 @@ class Searcher(QtCore.QObject):
 		filename = ''
 		regexp = convert_filefilter_to_regexp(searchpattern)
 		pattern = re.compile(regexp)
-
+		
+		names = os.path.normpath(directory).split(os.sep)
+		base_level = len(names)
+		
 		stack = [directory]
 
 		if(len(searchText) > 0):
@@ -68,19 +76,33 @@ class Searcher(QtCore.QObject):
 				for filep in filesInDir:
 
 					filename = cur_dir + os.sep + filep
+					
+					# get the depth
+					names = os.path.normpath(filename).split(os.sep)
+					level = len(names)-base_level-1
+					
 					if os.path.isdir(filename):
-						stack.insert(0,filename)
-						self.messageSignal.emit(self.shortMessage(filename))
+						
+						# check for subDirLevel
+						if level < self.searchSubDirLevel:
+							stack.insert(0,filename)
+							
+						if level <= self.searchSubDirLevel:	
+							# include directories for search pattern
+							if self.includeDirectories and pattern.search(filep) and not searchInText:
+								# Emit the signal for found directory/filename
+								self.additemSignal.emit('[D]%s' %filename)
+							
 					else:
 						if pattern.search(filep):
 							if(searchInText):
-								fsearch = FileSearcher(filename,self,self.stopEvent)
+								fsearch = FileSearcher(filename,self,self.stopEvent,self.encoding)
 								if(fsearch.search(searchText,FileSearcher.SEARCH_MODE_TEXT)):	
 									# Emit the signal for found filename
-									self.additemSignal.emit(filename)
+									self.additemSignal.emit('[F]%s' %filename)
 							else:
 								# Emit the signal for found filename
-								self.additemSignal.emit(filename)	
+								self.additemSignal.emit('[F]%s' %filename)	
 							
 
 					if self.stopEvent.isSet():

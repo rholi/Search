@@ -20,6 +20,7 @@ class SearchWithDialog(DirectoryPaneCommand):
 	@run_in_main_thread
 	def __call__(self):
 		scheme, currentDir = splitscheme(self.pane.get_path())
+		currentDir = os.path.normpath(currentDir)
 		
 		global current_dir
 		global current_parent_dir
@@ -53,7 +54,7 @@ class SearchFileSystem(FileSystem):
 
 	def iterdir(self, path):
 		list = []
-
+		
 		if path == '':
 			list = root_node.children_as_string
 		else:

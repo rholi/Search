@@ -12,9 +12,10 @@ class FileSearcher(QtCore.QObject):
 	_fileName = ''
 	_f=0
 	
-	def __init__(self,fileName,parent=None,stopEvent=Event()):
+	def __init__(self,fileName,parent=None,stopEvent=Event(),encoding='utf-8'):
 		super(FileSearcher, self).__init__(parent)
 		self.stopEvent = stopEvent
+		self.encoding = encoding
 		if os.path.isfile(fileName):
 			self._fileName = fileName
 		
@@ -22,7 +23,9 @@ class FileSearcher(QtCore.QObject):
 		rc = False
 		try:
 			if len(self._fileName) > 0:
-				self._f = codecs.open(self._fileName,"r",encoding='utf-8', errors='ignore')
+				# codecs.open is obsolete
+				#self._f = codecs.open(self._fileName,"r",encoding=self.encoding, errors='ignore')
+				self._f = open(self._fileName,"r",encoding=self.encoding)
 				if(mode==self.SEARCH_MODE_TEXT):
 					rc = self._searchText(self._f,searchText)
 				elif(mode==self.SEARCH_MODE_MAP):
