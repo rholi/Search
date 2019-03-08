@@ -65,6 +65,7 @@ class SearchDialog(QDialog):
 	def initUI(self):
 		self.resize(1000, 400)
 		self.setWindowTitle(self.title)
+		self.setWindowFlags(QtCore.Qt.Window)
 
 	def createUI(self):
 		self.layout = QVBoxLayout(self)
