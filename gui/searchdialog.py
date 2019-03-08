@@ -83,13 +83,13 @@ class SearchDialog(QDialog):
 		fileFilterLabel = QLabel('file filter')
 		self.fileFilterText = QComboBox()
 		self.fileFilterText.setEditable(True)
+		self.fileFilterText.lineEdit().returnPressed.connect(self.searchButtonClicked)
 		
 		searchDirLabel = QLabel('search in directory')
 		self.searchDirText = QLineEdit(self.directory)
 		
-		
 		subdirsHBoxLayout = QHBoxLayout(self)
-				
+		
 		self.searchSubDirLabel = QLabel('search in subdirs:')
 		
 		self.searchSubDirAll = QRadioButton('all')
@@ -101,7 +101,7 @@ class SearchDialog(QDialog):
 		self.searchSubDirLevel = QRadioButton('depth:')
 		self.searchSubDirAll.setChecked(False)
 		
-		self.searchSubDirLevelText = QLineEdit('1')		
+		self.searchSubDirLevelText = QLineEdit('1')
 		self.searchSubDirLevelText.setInputMask('99')
 		
 		self.includeDirectoriesCheckBox = QCheckBox('include directories in fileslist')
@@ -153,7 +153,6 @@ class SearchDialog(QDialog):
 		self.showInFmanButton = QPushButton("show results in &fman pane")
 		self.showInFmanButton.clicked.connect(self.showInFman)
 		
-		
 		self.messageLabel = QLabel('')
 		
 		self.counterLabel = QLabel('')
@@ -161,10 +160,10 @@ class SearchDialog(QDialog):
 		gridLayout.addWidget(self.searchSpotlightCheckBox,0,0)
 		gridLayout.addWidget(self.searchSpotlightLabel,0,1)	
 
-		gridLayout.addWidget(fileFilterLabel,1,0)	
+		gridLayout.addWidget(fileFilterLabel,1,0)
 		gridLayout.addWidget(self.fileFilterText,1,1)
 		
-		gridLayout.addWidget(searchDirLabel,2,0)	
+		gridLayout.addWidget(searchDirLabel,2,0)
 		gridLayout.addWidget(self.searchDirText,2,1)
 		
 		gridLayout.addLayout(subdirsHBoxLayout,3,1)
@@ -258,25 +257,25 @@ class SearchDialog(QDialog):
 			searchsubdirlevelcheck = self.setup['searchsubdirlevel']
 			self.searchSubDirLevel.setChecked(searchsubdirlevelcheck)
 		except Exception as e:
-			pass	
+			pass
 			
 		try:
 			searchsubdirleveltext = self.setup['searchsubdirleveltext']
 			self.searchSubDirLevelText.setText(searchsubdirleveltext)
 		except Exception as e:
-			pass	
+			pass
 
 		try:
 			includedirectoriescheck = self.setup['includedirectoriescheck']
 			self.includeDirectoriesCheckBox.setChecked(includedirectoriescheck)
 		except Exception as e:
-			pass	
+			pass
 			
 		try:
 			encoding = self.setup['encoding']
 			self.encodingText.setEditText(encoding)
 		except Exception as e:
-			pass	
+			pass
 			
 			
 		# spotlight only for Mac
@@ -346,7 +345,7 @@ class SearchDialog(QDialog):
 			self.fman_pane.set_path(as_url(path),callback)
 
 	
-	def closeDialog(self):		
+	def closeDialog(self):
 
 		try:
 			self.fileNameQueueTimer.stop()
@@ -366,7 +365,7 @@ class SearchDialog(QDialog):
 			show_status_message('error: %s' %(e))
 
 		
-	def showModal(self):	
+	def showModal(self):
 		self.show()
 		rc = self.exec_()
 	
@@ -385,7 +384,7 @@ class SearchDialog(QDialog):
 				self.searchButton.setEnabled(True)
 				self.searchButton.setDefault(True)
 			
-			elif button_mode == BUTTON_MODE_FOR_STOPPING:			
+			elif button_mode == BUTTON_MODE_FOR_STOPPING:
 				
 				self.searchButton.setEnabled(False)
 				self.searchButton.setVisible(False)
@@ -488,7 +487,7 @@ class SearchDialog(QDialog):
 		
 		if hasattr(self,'searchThread'):
 			self.searchThread.quit()
-			self.searchThread.wait()		
+			self.searchThread.wait()
 
 	def showInFman(self):
 		
@@ -668,7 +667,7 @@ class SearchDialog(QDialog):
 		setup['searchsubdirlevel'] 		 = self.searchSubDirLevel.isChecked()
 		setup['searchsubdirleveltext'] 	 = self.searchSubDirLevelText.text()
 		setup['includedirectoriescheck'] = self.includeDirectoriesCheckBox.checkState()
-		setup['encoding']             	 = self.encodingText.currentText()
+		setup['encoding']				 = self.encodingText.currentText()
 		
 		with open(setupfile, 'w') as outfile:
 			json.dump(setup, outfile)
