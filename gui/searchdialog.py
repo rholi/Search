@@ -105,8 +105,11 @@ class SearchDialog(QDialog):
 		self.searchSubDirLevelText.setInputMask('99')
 		
 		self.includeDirectoriesCheckBox = QCheckBox('include directories in fileslist')
+
+		self.includeRegexModeCheckBox = QCheckBox('use regex')
 		
 		subdirsHBoxLayout.addWidget(self.includeDirectoriesCheckBox)
+		subdirsHBoxLayout.addWidget(self.includeRegexModeCheckBox)
 		subdirsHBoxLayout.addStretch(1)
 		
 		subdirsHBoxLayout.addWidget(self.searchSubDirLabel)
@@ -271,6 +274,12 @@ class SearchDialog(QDialog):
 			self.includeDirectoriesCheckBox.setChecked(includedirectoriescheck)
 		except Exception as e:
 			pass	
+
+		try:
+			includegexcheck = self.setup['includegexcheck']
+			self.includeRegexModeCheckBox.setChecked(includegexcheck)
+		except Exception as e:
+			pass		
 			
 		try:
 			encoding = self.setup['encoding']
@@ -434,6 +443,7 @@ class SearchDialog(QDialog):
 			searchSubDirMode = self.searchSubDirButtonGroup.checkedId()
 			searchSubDirLevelText = self.searchSubDirLevelText.text()
 			includeDirectories = self.includeDirectoriesCheckBox.isChecked()
+			includeRegex = self.includeRegexModeCheckBox.isChecked()
 			
 			searchSubDirLevel = 0
 			
@@ -468,7 +478,7 @@ class SearchDialog(QDialog):
 			if len(encoding.strip()) == 0:
 				encoding = 'utf-8'
 				
-			self.searcher = Searcher(directory,pattern,searchText,self.searchStopEvent,searchmode,searchSubDirLevel,includeDirectories,encoding)
+			self.searcher = Searcher(directory,pattern,searchText,self.searchStopEvent,searchmode,searchSubDirLevel,includeDirectories,includeRegex,encoding)
 			self.searchThread = QtCore.QThread()
 			self.searcher.moveToThread(self.searchThread)
 
@@ -668,6 +678,7 @@ class SearchDialog(QDialog):
 		setup['searchsubdirlevel'] 		 = self.searchSubDirLevel.isChecked()
 		setup['searchsubdirleveltext'] 	 = self.searchSubDirLevelText.text()
 		setup['includedirectoriescheck'] = self.includeDirectoriesCheckBox.checkState()
+		setup['includegexcheck'] 		 = self.includeRegexModeCheckBox.checkState()
 		setup['encoding']             	 = self.encodingText.currentText()
 		
 		with open(setupfile, 'w') as outfile:

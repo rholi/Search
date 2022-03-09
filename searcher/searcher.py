@@ -21,9 +21,8 @@ class Searcher(QtCore.QObject):
 	messageSignal = QtCore.pyqtSignal(object)
 	finished = QtCore.pyqtSignal()
 	
-	def __init__(self,directory,pattern,searchText='',stopEvent=Event(),searchMode=SEARCH_MODE_SEQU,searchSubDirLevel=0,includeDirectories=True,encoding='utf-8'):
-		super(Searcher, self).__init__()
-
+	def __init__(self,directory,pattern,searchText='',stopEvent=Event(),searchMode=SEARCH_MODE_SEQU,searchSubDirLevel=0,includeDirectories=True,includeRegex=True, encoding='utf-8'):
+		super(Searcher, self).__init__()		
 		self.directory = directory
 		self.pattern = pattern
 		self.searchText = searchText
@@ -31,6 +30,7 @@ class Searcher(QtCore.QObject):
 		self.searchMode = searchMode
 		self.searchSubDirLevel = searchSubDirLevel
 		self.includeDirectories = includeDirectories
+		self.includeRegex = includeRegex
 		self.encoding = encoding
 
 	def startSearch(self):
@@ -54,7 +54,12 @@ class Searcher(QtCore.QObject):
 		searchInText = False
 		message = directory
 		filename = ''
-		regexp = convert_filefilter_to_regexp(searchpattern)
+		
+		searchArray = []
+		if self.includeRegex == False:
+			searchArray = searchpattern.split(' ')					
+
+		regexp = convert_filefilter_to_regexp(searchpattern)				
 		pattern = re.compile(regexp)
 		
 		names = os.path.normpath(directory).split(os.sep)
@@ -70,7 +75,7 @@ class Searcher(QtCore.QObject):
 			
 			self.messageSignal.emit(self.shortMessage(cur_dir))
 
-			stack = stack[1:]
+			stack = stack[1:]			
 			try:
 				filesInDir = os.listdir(cur_dir)
 				for filep in filesInDir:
@@ -93,8 +98,22 @@ class Searcher(QtCore.QObject):
 								# Emit the signal for found directory/filename
 								self.additemSignal.emit('[D]%s' %filename)
 							
-					else:
-						if pattern.search(filep):
+					else:											
+						if len(searchArray) > 0:												
+							filep = filep.lower()
+							containsAll = True
+							for searchItem in searchArray:
+								if filep.find(searchItem.lower()) == -1:									
+									containsAll = False
+									break
+									
+							if containsAll:
+								if searchInText:
+									if searchText in open(filename, 'r').read():
+										self.additemSignal.emit('[T]%s' %filename)
+								else:
+									self.additemSignal.emit('[F]%s' %filename)
+						elif pattern.search(filep):
 							if(searchInText):
 								fsearch = FileSearcher(filename,self,self.stopEvent,self.encoding)
 								if(fsearch.search(searchText,FileSearcher.SEARCH_MODE_TEXT)):	
@@ -129,6 +148,7 @@ class Searcher(QtCore.QObject):
 			
 		
 	def searchInDirRecursive(self,directory,searchpattern,searchText=''):
+		show_alert("Sucht Rekursiv ab Verzeichnis nach pattern")
 		"Sucht Rekursiv ab Verzeichnis nach pattern"
 		searchInText = False
 		message = directory
@@ -155,7 +175,7 @@ class Searcher(QtCore.QObject):
 				if os.path.isdir(filename):
 					self.searchInDirRecursive(filename,pattern,searchText) 
 				else:
-					if pattern.search(filep):
+					if pattern.search(filep):										
 						if(searchInText):
 							fs = FileSearcher(filename,self)
 							if(fs.search(searchText,FileSearcher.SEARCH_MODE_TEXT)):	
