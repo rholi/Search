@@ -84,7 +84,7 @@ class SearchDialog(QDialog):
 		fileFilterLabel = QLabel('file filter')
 		self.fileFilterText = QComboBox()
 		self.fileFilterText.setEditable(True)
-		
+		self.fileFilterText.lineEdit().returnPressed.connect(self.searchButtonClicked)
 		searchDirLabel = QLabel('search in directory')
 		self.searchDirText = QLineEdit(self.directory)
 		
