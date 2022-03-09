@@ -169,8 +169,8 @@ class SearchDialog(QDialog):
 		self.stopButton = QPushButton("Sto&p")
 		self.stopButton.clicked.connect(self.stopButtonClicked)
 		
-		self.showInFmanButton = QPushButton("show results in &fman pane")
-		self.showInFmanButton.clicked.connect(self.showInFman)
+		#self.showInFmanButton = QPushButton("show results in &fman pane")
+		#self.showInFmanButton.clicked.connect(self.showInFman)
 		
 		
 		self.messageLabel = QLabel('')
@@ -215,8 +215,8 @@ class SearchDialog(QDialog):
 		buttonBoxLayout.addWidget(self.cancelButton)
 		buttonBoxLayout.addWidget(self.searchButton)
 		buttonBoxLayout.addWidget(self.stopButton)
-		buttonBoxLayout.addWidget(self.showInFmanButton)
-		
+		#buttonBoxLayout.addWidget(self.showInFmanButton)
+				
 		self.layout.addLayout(buttonBoxLayout)
 		
 		self.buttonMode(BUTTON_MODE_FOR_SEARCHING)
