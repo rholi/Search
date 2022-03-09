@@ -51,7 +51,9 @@ So if you want to only search pdf files use
 
 ```Test pdf```
 
+### Keyboard navigation
 
+F1 focuses on "file filter", F2 on "search in directory" and F3 on the results list
 
 
 ## Installation

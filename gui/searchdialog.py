@@ -52,23 +52,38 @@ class SearchDialog(QDialog):
 		self.fileNameQueueTimer.start()
 		
 		self.setAttribute(Qt.WA_DeleteOnClose)
-		self.title = 'Search'
+		self.title = 'fman search'
 		
 		self.directory = directory
 		self.fileFilter = ''
 
 		self.setup = self.load_setup(SEARCHSETUP)
-		
+
+
 		self.initUI()
 		self.createUI()
 
+
+	def newOnkeyPressEvent(self, event):	
+		if event.key() == QtCore.Qt.Key_F1:
+			self.fileFilterText.setFocus()
+		elif event.key() == QtCore.Qt.Key_F2:			
+			self.searchDirText.setFocus()
+		elif event.key() == QtCore.Qt.Key_F3:
+			rowIndex = self.searchResultList.currentRow()
+			if rowIndex < 0:
+				rowIndex = 0				
+			self.searchResultList.setCurrentRow(rowIndex)
+			self.searchResultList.setFocus()
+
 	def initUI(self):
-		self.resize(1000, 400)
+		self.resize(1000, 600)
 		self.setWindowTitle(self.title)
 		self.setWindowFlags(QtCore.Qt.Window)
+		self.keyPressEvent = self.newOnkeyPressEvent
 
 	def createUI(self):
-		self.layout = QVBoxLayout(self)
+		self.layout = QVBoxLayout(self)						
 		self.layout.setContentsMargins(0, 0, 0, 0)
 	
 		groupBox = QGroupBox("Search")
@@ -189,6 +204,7 @@ class SearchDialog(QDialog):
 		self.searchResultList = QListWidget()
 		self.layout.addWidget(self.searchResultList)
 		self.searchResultList.itemDoubleClicked.connect(self.onDoubleClickSearchResultList)
+		self.searchResultList.keyPressEvent = self.onKeyPressSearchResultList
 		
 		self.progressBar = QProgressBar(self)
 		self.layout.addWidget(self.progressBar)
@@ -205,8 +221,21 @@ class SearchDialog(QDialog):
 		
 		self.buttonMode(BUTTON_MODE_FOR_SEARCHING)
 		
-		self.preset()
-		
+		self.preset()	
+
+
+	def onKeyPressSearchResultList(self, e):			
+		if e.key() == Qt.Key_Return or e.key() == Qt.Key_Enter:
+			fullname = self.searchResultList.currentItem().text()
+			path,filename = os.path.split(os.path.abspath(fullname))
+			if not filename == '':				
+				def callback():
+					self.fman_pane.place_cursor_at(as_url(fullname))
+
+				self.fman_pane.set_path(as_url(path),callback)	
+	
+		else:			
+			QListWidget.keyPressEvent(self.searchResultList, e)
 
 	def preset(self):
 		# set from setup
@@ -342,8 +371,9 @@ class SearchDialog(QDialog):
 		self.encodingLabel.setVisible(not enabled)
 		self.encodingText.setVisible(not enabled)
 		
-		self.setTextMode(self.searchCheckBox.isChecked(),True)
-		
+		self.setTextMode(self.searchCheckBox.isChecked(),True)		
+
+
 
 	def onDoubleClickSearchResultList(self,item):
 		fullname = item.text()
@@ -353,9 +383,8 @@ class SearchDialog(QDialog):
 			def callback():
 				self.fman_pane.place_cursor_at(as_url(fullname))
 
-			self.fman_pane.set_path(as_url(path),callback)
+			self.fman_pane.set_path(as_url(path),callback)		
 
-	
 	def closeDialog(self):		
 
 		try:
