@@ -83,10 +83,11 @@ class SearchDialog(QDialog):
 		fileFilterLabel = QLabel('file filter')
 		self.fileFilterText = QComboBox()
 		self.fileFilterText.setEditable(True)
+		self.fileFilterText.lineEdit().returnPressed.connect(self.searchButtonClicked)
 		
 		searchDirLabel = QLabel('search in directory')
 		self.searchDirText = QLineEdit(self.directory)
-		
+		self.searchDirText.returnPressed.connect(self.searchButtonClicked)
 		
 		subdirsHBoxLayout = QHBoxLayout(self)
 				
@@ -102,7 +103,8 @@ class SearchDialog(QDialog):
 		self.searchSubDirAll.setChecked(False)
 		
 		self.searchSubDirLevelText = QLineEdit('1')		
-		self.searchSubDirLevelText.setInputMask('99')
+		self.searchSubDirLevelText.setInputMask('90')
+		self.searchSubDirLevelText.returnPressed.connect(self.searchButtonClicked)
 		
 		self.includeDirectoriesCheckBox = QCheckBox('include directories in fileslist')
 		
@@ -129,6 +131,7 @@ class SearchDialog(QDialog):
 		self.searchCheckBox.stateChanged.connect(self.searchTextChecked)
 		self.searchText = QComboBox()
 		self.searchText.setEditable(True)
+		self.searchText.lineEdit().returnPressed.connect(self.searchButtonClicked)
 		
 		# encoding
 		self.encodingLabel = QLabel('encoding')
