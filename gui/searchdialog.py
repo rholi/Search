@@ -52,22 +52,38 @@ class SearchDialog(QDialog):
 		self.fileNameQueueTimer.start()
 		
 		self.setAttribute(Qt.WA_DeleteOnClose)
-		self.title = 'Search'
+		self.title = 'fman search'
 		
 		self.directory = directory
 		self.fileFilter = ''
 
 		self.setup = self.load_setup(SEARCHSETUP)
-		
+
+
 		self.initUI()
 		self.createUI()
 
+
+	def newOnkeyPressEvent(self, event):	
+		if event.key() == QtCore.Qt.Key_F1:
+			self.fileFilterText.setFocus()
+		elif event.key() == QtCore.Qt.Key_F2:			
+			self.searchDirText.setFocus()
+		elif event.key() == QtCore.Qt.Key_F3:
+			rowIndex = self.searchResultList.currentRow()
+			if rowIndex < 0:
+				rowIndex = 0				
+			self.searchResultList.setCurrentRow(rowIndex)
+			self.searchResultList.setFocus()
+
 	def initUI(self):
-		self.resize(1000, 400)
+		self.resize(1000, 600)
 		self.setWindowTitle(self.title)
+		self.setWindowFlags(QtCore.Qt.Window)
+		self.keyPressEvent = self.newOnkeyPressEvent
 
 	def createUI(self):
-		self.layout = QVBoxLayout(self)
+		self.layout = QVBoxLayout(self)						
 		self.layout.setContentsMargins(0, 0, 0, 0)
 	
 		groupBox = QGroupBox("Search")
@@ -83,7 +99,7 @@ class SearchDialog(QDialog):
 		fileFilterLabel = QLabel('file filter')
 		self.fileFilterText = QComboBox()
 		self.fileFilterText.setEditable(True)
-		
+		self.fileFilterText.lineEdit().returnPressed.connect(self.searchButtonClicked)
 		searchDirLabel = QLabel('search in directory')
 		self.searchDirText = QLineEdit(self.directory)
 		
@@ -105,8 +121,11 @@ class SearchDialog(QDialog):
 		self.searchSubDirLevelText.setInputMask('99')
 		
 		self.includeDirectoriesCheckBox = QCheckBox('include directories in fileslist')
+
+		self.includeRegexModeCheckBox = QCheckBox('use regex')
 		
 		subdirsHBoxLayout.addWidget(self.includeDirectoriesCheckBox)
+		subdirsHBoxLayout.addWidget(self.includeRegexModeCheckBox)
 		subdirsHBoxLayout.addStretch(1)
 		
 		subdirsHBoxLayout.addWidget(self.searchSubDirLabel)
@@ -150,8 +169,8 @@ class SearchDialog(QDialog):
 		self.stopButton = QPushButton("Sto&p")
 		self.stopButton.clicked.connect(self.stopButtonClicked)
 		
-		self.showInFmanButton = QPushButton("show results in &fman pane")
-		self.showInFmanButton.clicked.connect(self.showInFman)
+		#self.showInFmanButton = QPushButton("show results in &fman pane")
+		#self.showInFmanButton.clicked.connect(self.showInFman)
 		
 		
 		self.messageLabel = QLabel('')
@@ -185,6 +204,7 @@ class SearchDialog(QDialog):
 		self.searchResultList = QListWidget()
 		self.layout.addWidget(self.searchResultList)
 		self.searchResultList.itemDoubleClicked.connect(self.onDoubleClickSearchResultList)
+		self.searchResultList.keyPressEvent = self.onKeyPressSearchResultList
 		
 		self.progressBar = QProgressBar(self)
 		self.layout.addWidget(self.progressBar)
@@ -195,14 +215,27 @@ class SearchDialog(QDialog):
 		buttonBoxLayout.addWidget(self.cancelButton)
 		buttonBoxLayout.addWidget(self.searchButton)
 		buttonBoxLayout.addWidget(self.stopButton)
-		buttonBoxLayout.addWidget(self.showInFmanButton)
-		
+		#buttonBoxLayout.addWidget(self.showInFmanButton)
+				
 		self.layout.addLayout(buttonBoxLayout)
 		
 		self.buttonMode(BUTTON_MODE_FOR_SEARCHING)
 		
-		self.preset()
-		
+		self.preset()	
+
+
+	def onKeyPressSearchResultList(self, e):			
+		if e.key() == Qt.Key_Return or e.key() == Qt.Key_Enter:
+			fullname = self.searchResultList.currentItem().text()
+			path,filename = os.path.split(os.path.abspath(fullname))
+			if not filename == '':				
+				def callback():
+					self.fman_pane.place_cursor_at(as_url(fullname))
+
+				self.fman_pane.set_path(as_url(path),callback)	
+	
+		else:			
+			QListWidget.keyPressEvent(self.searchResultList, e)
 
 	def preset(self):
 		# set from setup
@@ -271,6 +304,12 @@ class SearchDialog(QDialog):
 			self.includeDirectoriesCheckBox.setChecked(includedirectoriescheck)
 		except Exception as e:
 			pass	
+
+		try:
+			includegexcheck = self.setup['includegexcheck']
+			self.includeRegexModeCheckBox.setChecked(includegexcheck)
+		except Exception as e:
+			pass		
 			
 		try:
 			encoding = self.setup['encoding']
@@ -332,8 +371,9 @@ class SearchDialog(QDialog):
 		self.encodingLabel.setVisible(not enabled)
 		self.encodingText.setVisible(not enabled)
 		
-		self.setTextMode(self.searchCheckBox.isChecked(),True)
-		
+		self.setTextMode(self.searchCheckBox.isChecked(),True)		
+
+
 
 	def onDoubleClickSearchResultList(self,item):
 		fullname = item.text()
@@ -343,9 +383,8 @@ class SearchDialog(QDialog):
 			def callback():
 				self.fman_pane.place_cursor_at(as_url(fullname))
 
-			self.fman_pane.set_path(as_url(path),callback)
+			self.fman_pane.set_path(as_url(path),callback)		
 
-	
 	def closeDialog(self):		
 
 		try:
@@ -434,6 +473,7 @@ class SearchDialog(QDialog):
 			searchSubDirMode = self.searchSubDirButtonGroup.checkedId()
 			searchSubDirLevelText = self.searchSubDirLevelText.text()
 			includeDirectories = self.includeDirectoriesCheckBox.isChecked()
+			includeRegex = self.includeRegexModeCheckBox.isChecked()
 			
 			searchSubDirLevel = 0
 			
@@ -468,7 +508,7 @@ class SearchDialog(QDialog):
 			if len(encoding.strip()) == 0:
 				encoding = 'utf-8'
 				
-			self.searcher = Searcher(directory,pattern,searchText,self.searchStopEvent,searchmode,searchSubDirLevel,includeDirectories,encoding)
+			self.searcher = Searcher(directory,pattern,searchText,self.searchStopEvent,searchmode,searchSubDirLevel,includeDirectories,includeRegex,encoding)
 			self.searchThread = QtCore.QThread()
 			self.searcher.moveToThread(self.searchThread)
 
@@ -668,6 +708,7 @@ class SearchDialog(QDialog):
 		setup['searchsubdirlevel'] 		 = self.searchSubDirLevel.isChecked()
 		setup['searchsubdirleveltext'] 	 = self.searchSubDirLevelText.text()
 		setup['includedirectoriescheck'] = self.includeDirectoriesCheckBox.checkState()
+		setup['includegexcheck'] 		 = self.includeRegexModeCheckBox.checkState()
 		setup['encoding']             	 = self.encodingText.currentText()
 		
 		with open(setupfile, 'w') as outfile:
